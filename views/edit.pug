@@ -38,5 +38,7 @@ block body
         body: `title=${title}&body=${body}`
       }).then(response => {
         window.location= "/notes/#{currentNote._id}";
+      }).catch(error => {
+        console.error(error);
       });
     });

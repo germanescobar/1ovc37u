@@ -25,6 +25,21 @@ NoteSchema.methods.truncateBody = function() {
 };
 const Note = mongoose.model("Note", NoteSchema);
 
+const VisitorSchema = new mongoose.Schema({
+  path: String,
+  date: { type: Date, default: Date.now },
+  userAgent: String
+});
+const Visitor = mongoose.model("Visitor", VisitorSchema);
+
+app.use(async (req, res, next) => {
+  if (req.method == "GET") {
+    const visitor = new Visitor({ path: req.path, userAgent: req.get('User-Agent') });
+    await visitor.save();
+  }
+  next();
+});
+
 app.get("/", async (req, res) => {
   const notes = await Note.find();
   res.render("index",{ notes: notes } )
@@ -82,6 +97,11 @@ app.patch("/notes/:id", async (req, res) => {
 app.delete("/notes/:id", async (req, res) => {
   await Note.deleteOne({ _id: req.params.id });
   res.status(204).send({});
+});
+
+app.get("/analytics", async (req, res) => {
+  const pageViews = await Visitor.aggregate().group({ _id: "$path", count: { $sum: 1 } }).sort('-count').exec();
+  res.render("analytics", { pageViews: pageViews });
 });
 
 app.listen(3000, () => console.log("Listening on port 3000 ..."));
